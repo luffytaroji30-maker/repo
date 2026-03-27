@@ -44,10 +44,10 @@ try = ["bedwars"]
 # Force players connecting with a specific domain to a server.
 
 [advanced]
-# Compression threshold for packets. -1 to disable, 256 is standard.
-compression-threshold = 256
+# Compress almost everything — fewer bytes over the slow proxy↔client link.
+compression-threshold = 1
 
-# Compression level (0-9). Higher = better compression, more CPU.
+# Compression level (0-9). 6 is a good balance.
 compression-level = 6
 
 # Login rate limit (ms between connections from same address).
@@ -62,8 +62,8 @@ read-timeout = 30000
 # Enable HAProxy PROXY protocol support.
 haproxy-protocol = false
 
-# Enable TCP fast open.
-tcp-fast-open = false
+# Enable TCP fast open — saves 1 RTT on reconnects.
+tcp-fast-open = true
 
 # Enable BungeeCord plugin messaging channel support.
 bungee-plugin-message-channel = true
