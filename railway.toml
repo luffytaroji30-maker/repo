@@ -10,6 +10,7 @@ dockerfilePath = "Dockerfile"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 numReplicas = 1
+region = "asia-southeast1"
 
 # Minecraft proxy port — players connect here
 [[services.ports]]
