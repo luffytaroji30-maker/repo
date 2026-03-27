@@ -59,8 +59,8 @@ connection-timeout = 5000
 # Read timeout (ms).
 read-timeout = 30000
 
-# Enable HAProxy PROXY protocol support.
-haproxy-protocol = false
+# Enable HAProxy PROXY protocol support (required for TCPShield).
+haproxy-protocol = true
 
 # Enable TCP fast open — saves 1 RTT on reconnects.
 tcp-fast-open = true
