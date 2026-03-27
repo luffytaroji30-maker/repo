@@ -47,7 +47,7 @@ const Shell = () => {
             <Zap className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-tight">VelocityPanel</h1>
+            <h1 className="text-sm font-bold tracking-tight">HellCore</h1>
             <StatusIndicator status="online" label="Online" />
           </div>
         </div>

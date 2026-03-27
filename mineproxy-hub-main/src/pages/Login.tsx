@@ -25,8 +25,8 @@ const Login = () => {
           <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center glow-primary mb-4">
             <Zap className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">VelocityPanel</h1>
-          <p className="text-sm text-muted-foreground mt-1">Proxy Management Dashboard</p>
+          <h1 className="text-xl font-bold tracking-tight">HellCore</h1>
+          <p className="text-sm text-muted-foreground mt-1">Server Management Panel</p>
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-lg border border-border bg-card p-6 space-y-4">
