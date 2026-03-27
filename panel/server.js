@@ -28,6 +28,48 @@ let velocityStdin = null;
 let lastCommandResponse = '';
 let commandResolve = null;
 
+// ---- Background Log Watcher — tracks online players in real-time ----
+const onlinePlayers = new Map(); // playerName -> { name, server }
+let logWatcherOffset = 0;
+
+function startLogWatcher() {
+  const poll = () => {
+    try {
+      if (!fs.existsSync(LOG_FILE)) return;
+      const stat = fs.statSync(LOG_FILE);
+      if (stat.size < logWatcherOffset) logWatcherOffset = 0; // log rotated
+      if (stat.size <= logWatcherOffset) return;
+
+      const fd = fs.openSync(LOG_FILE, 'r');
+      const buf = Buffer.alloc(stat.size - logWatcherOffset);
+      fs.readSync(fd, buf, 0, buf.length, logWatcherOffset);
+      fs.closeSync(fd);
+      logWatcherOffset = stat.size;
+
+      for (const line of buf.toString('utf8').split('\n')) {
+        // Player connected to proxy
+        const conn = line.match(/\[connected player\]\s+(\S+)\s.*has connected/);
+        if (conn) {
+          onlinePlayers.set(conn[1], { name: conn[1], server: '' });
+        }
+        // Player routed to a backend server
+        const srv = line.match(/\[server connection\]\s+(\S+)\s+->\s+(\S+)\s+has connected/);
+        if (srv) {
+          onlinePlayers.set(srv[1], { name: srv[1], server: srv[2] });
+        }
+        // Player disconnected
+        const disc = line.match(/\[connected player\]\s+(\S+)\s.*has disconnected/);
+        if (disc) {
+          onlinePlayers.delete(disc[1]);
+        }
+      }
+    } catch (_) {}
+  };
+  setInterval(poll, 2000);
+  poll();
+}
+startLogWatcher();
+
 function parseCookies(header) {
   const map = {};
   if (!header) return map;
@@ -157,20 +199,8 @@ app.get('/api/info', auth, async (req, res) => {
       }
     } catch (_) {}
 
-    // Player count — parse from recent log lines
-    try {
-      const recentLog = execSync(`tail -n 50 "${LOG_FILE}" 2>/dev/null`, { encoding: 'utf8' });
-      // Try to find player count from glist or connection messages
-      const lines = recentLog.split('\n');
-      let playerCount = 0;
-      for (const line of lines) {
-        const match = line.match(/(\d+) players? connected/i);
-        if (match) playerCount = parseInt(match[1]);
-      }
-      info.playerCount = playerCount;
-    } catch (_) {
-      info.playerCount = 0;
-    }
+    // Player count from live tracker
+    info.playerCount = onlinePlayers.size;
 
     // Velocity version — try to parse from log
     try {
@@ -188,30 +218,7 @@ app.get('/api/info', auth, async (req, res) => {
 // ---- Players ----
 app.get('/api/players', auth, async (req, res) => {
   try {
-    // Send glist command and parse the log output
-    await sendVelocityCommand('glist');
-    // Wait for output to appear in log
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Parse recent log for player list
-    const recentLog = execSync(`tail -n 30 "${LOG_FILE}" 2>/dev/null`, { encoding: 'utf8' });
-    const players = [];
-    const lines = recentLog.split('\n');
-
-    let currentServer = '';
-    for (const line of lines) {
-      // Velocity glist format: "[server] (N): player1, player2"
-      const serverMatch = line.match(/\[(\w+)\]\s*\((\d+)\):\s*(.*)/);
-      if (serverMatch) {
-        currentServer = serverMatch[1];
-        const names = serverMatch[3].split(',').map(n => n.trim()).filter(Boolean);
-        for (const name of names) {
-          players.push({ name, server: currentServer });
-        }
-      }
-    }
-
-    res.json({ players });
+    res.json({ players: Array.from(onlinePlayers.values()) });
   } catch (err) {
     res.json({ players: [], error: err.message });
   }
@@ -223,12 +230,12 @@ app.get('/api/servers', auth, (req, res) => {
     const toml = fs.readFileSync(VELOCITY_TOML, 'utf8');
     const servers = [];
 
-    // Parse [servers] section from TOML
-    const serverSection = toml.match(/\[servers\]([\s\S]*?)(?=\[|$)/);
+    // Parse [servers] section — match up to the next [section] header (not inline brackets)
+    const serverSection = toml.match(/\[servers\]([\s\S]*?)(?=\n\[(?!.*=)|\s*$)/);
     if (serverSection) {
       const lines = serverSection[1].split('\n');
       for (const line of lines) {
-        const match = line.match(/^(\w+)\s*=\s*"([^"]+)"/);
+        const match = line.match(/^\s*(\w[\w-]*)\s*=\s*"([^"]+)"/);
         if (match && match[1] !== 'try') {
           servers.push({
             name: match[1],
@@ -240,6 +247,11 @@ app.get('/api/servers', auth, (req, res) => {
           });
         }
       }
+    }
+
+    // Enrich with live player counts from tracker
+    for (const srv of servers) {
+      srv.players = Array.from(onlinePlayers.values()).filter(p => p.server === srv.name).length;
     }
 
     // Try to ping each server
