@@ -1,0 +1,97 @@
+# Velocity Proxy Configuration
+
+# The address to bind the proxy to.
+bind = "0.0.0.0:25577"
+
+# The MOTD shown in the server list.
+motd = "&b&lBedWars Network &7| &aJoin Now!"
+
+# Max players shown in server list.
+show-max-players = 500
+
+# Should we authenticate players with Mojang?
+online-mode = true
+
+# Should the proxy enforce the new public key security standard?
+force-key-authentication = true
+
+# Player info forwarding mode. Using "legacy" for FlamePaper 1.8.8 compatibility.
+# Requires bungeecord: true in the backend spigot.yml (already set).
+player-info-forwarding-mode = "legacy"
+
+# Announce whether the proxy supports Forge.
+announce-forge = false
+
+# If enabled, players are kicked when they try to enter a full server.
+kick-existing-players = false
+
+# Ping passthrough mode. "DISABLED", "MODS", "DESCRIPTION", or "ALL"
+ping-passthrough = "DISABLED"
+
+# Enable player address logging.
+enable-player-address-logging = true
+
+[servers]
+# Backend server definitions.
+# BACKEND_HOST env var should be the Railway internal hostname of your BedWars service.
+# Format: "host:port"
+bedwars = "127.0.0.1:25565"
+
+# The default server to connect players to.
+try = ["bedwars"]
+
+[forced-hosts]
+# Force players connecting with a specific domain to a server.
+
+[advanced]
+# Compression threshold for packets. -1 to disable, 256 is standard.
+compression-threshold = 256
+
+# Compression level (0-9). Higher = better compression, more CPU.
+compression-level = 6
+
+# Login rate limit (ms between connections from same address).
+login-ratelimit = 3000
+
+# Connection timeout (ms).
+connection-timeout = 5000
+
+# Read timeout (ms).
+read-timeout = 30000
+
+# Enable HAProxy PROXY protocol support.
+haproxy-protocol = false
+
+# Enable TCP fast open.
+tcp-fast-open = false
+
+# Enable BungeeCord plugin messaging channel support.
+bungee-plugin-message-channel = true
+
+# Show ping requests in console.
+show-ping-requests = false
+
+# Failover on unexpected server disconnect.
+failover-on-unexpected-server-disconnect = true
+
+# Announce proxy commands to backend servers.
+announce-proxy-commands = true
+
+# Log command executions.
+log-command-executions = false
+
+# Log player connections.
+log-player-connections = true
+
+[query]
+# Whether to enable GameSpy 4 query protocol.
+enabled = false
+
+# The port to listen on for queries.
+port = 25577
+
+# The map name to report.
+map = "Velocity"
+
+# Whether to show plugins.
+show-plugins = false

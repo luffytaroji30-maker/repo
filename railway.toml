@@ -1,0 +1,28 @@
+# ============================================================
+# Railway deployment — Velocity Proxy Service
+# ============================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1
+
+# Minecraft proxy port — players connect here
+[[services.ports]]
+name = "minecraft"
+port = 25577
+protocol = "TCP"
+
+# Web panel
+[[services.ports]]
+name = "panel"
+port = 3000
+protocol = "TCP"
+
+# Environment Variables
+[deploy.envs]
+MEMORY = "2G"
