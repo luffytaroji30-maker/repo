@@ -44,11 +44,11 @@ try = ["bedwars"]
 # Force players connecting with a specific domain to a server.
 
 [advanced]
-# Compress almost everything — fewer bytes over the slow proxy↔client link.
-compression-threshold = 1
+# Only compress packets >= 256 bytes (Velocity default). Avoids CPU overhead on small packets.
+compression-threshold = 256
 
-# Compression level (0-9). 6 is a good balance.
-compression-level = 6
+# Fastest compression — minimal CPU cost, stable latency.
+compression-level = 1
 
 # Login rate limit (ms between connections from same address).
 login-ratelimit = 3000
