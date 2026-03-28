@@ -20,8 +20,34 @@ const LOG_FILE = path.join(DATA_DIR, 'logs', 'latest.log');
 const VELOCITY_TOML = path.join(DATA_DIR, 'velocity.toml');
 const PLUGINS_DIR = path.join(DATA_DIR, 'plugins');
 
-// Session store
+// Session store — persisted to file so sessions survive container restarts
+const SESSION_FILE = path.join(DATA_DIR, '.panel-sessions.json');
 const sessions = new Map();
+
+function loadSessions() {
+  try {
+    if (fs.existsSync(SESSION_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
+      const now = Date.now();
+      for (const [token, sess] of Object.entries(data)) {
+        // Expire sessions older than 7 days
+        if (now - sess.created < 7 * 24 * 60 * 60 * 1000) {
+          sessions.set(token, sess);
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+function saveSessions() {
+  try {
+    const obj = {};
+    for (const [token, sess] of sessions) obj[token] = sess;
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(obj), 'utf8');
+  } catch (_) {}
+}
+
+loadSessions();
 
 // Velocity process stdin reference (set by start.sh or attached later)
 let velocityStdin = null;
@@ -147,6 +173,7 @@ app.post('/api/login', (req, res) => {
   if (username === USERNAME && password === PASSWORD) {
     const token = crypto.randomBytes(32).toString('hex');
     sessions.set(token, { username, created: Date.now() });
+    saveSessions();
     res.setHeader('Set-Cookie', `session=${token}; Path=/; HttpOnly; SameSite=Strict`);
     return res.json({ ok: true });
   }
@@ -155,7 +182,7 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/logout', (req, res) => {
   const token = parseCookies(req.headers.cookie).session;
-  if (token) sessions.delete(token);
+  if (token) { sessions.delete(token); saveSessions(); }
   res.setHeader('Set-Cookie', 'session=; Path=/; HttpOnly; Max-Age=0');
   res.json({ ok: true });
 });
@@ -481,7 +508,19 @@ app.get('/api/files/download', auth, (req, res) => {
   const p = safePath(req.query.path);
   if (!p) return res.status(400).json({ error: 'Invalid path' });
   try {
-    res.download(p);
+    const stat = fs.statSync(p);
+    if (stat.isDirectory()) {
+      // Zip the folder and stream it
+      const folderName = path.basename(p);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
+      const zip = spawn('zip', ['-r', '-', '.'], { cwd: p });
+      zip.stdout.pipe(res);
+      zip.stderr.on('data', () => {});
+      zip.on('error', () => res.status(500).end());
+    } else {
+      res.download(p);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

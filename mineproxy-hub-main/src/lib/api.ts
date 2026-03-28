@@ -11,7 +11,11 @@ export async function api<T = any>(method: string, url: string, body?: unknown):
     window.dispatchEvent(new CustomEvent('auth:logout'));
     throw new Error('Unauthorized');
   }
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  return data;
 }
 
 // Types

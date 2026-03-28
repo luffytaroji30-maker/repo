@@ -40,51 +40,78 @@ const Files = () => {
   };
 
   const handleUpload = async (files: FileList) => {
-    for (const file of Array.from(files)) {
-      const buf = await file.arrayBuffer();
-      await fetch(`/api/files/upload?path=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(file.name)}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, credentials: 'same-origin', body: buf
-      });
+    try {
+      for (const file of Array.from(files)) {
+        const buf = await file.arrayBuffer();
+        const res = await fetch(`/api/files/upload?path=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(file.name)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, credentials: 'same-origin', body: buf
+        });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Upload failed'); }
+      }
+      toast.success('Files uploaded');
+      loadDir();
+    } catch (e: any) {
+      toast.error(e.message);
     }
-    toast.success('Files uploaded');
-    loadDir();
   };
 
   const handleNewFolder = async () => {
     const name = prompt('Folder name:');
     if (!name) return;
-    await api('POST', '/api/files/mkdir', { path: currentPath ? `${currentPath}/${name}` : name });
-    loadDir();
+    try {
+      await api('POST', '/api/files/mkdir', { path: currentPath ? `${currentPath}/${name}` : name });
+      toast.success('Folder created');
+      loadDir();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const handleNewFile = async () => {
     const name = prompt('File name:');
     if (!name) return;
-    await api('PUT', '/api/files/write', { path: currentPath ? `${currentPath}/${name}` : name, content: '' });
-    loadDir();
+    try {
+      await api('PUT', '/api/files/write', { path: currentPath ? `${currentPath}/${name}` : name, content: '' });
+      toast.success('File created');
+      loadDir();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const handleDelete = async (fp: string) => {
     if (!confirm(`Delete "${fp}"?`)) return;
-    await api('DELETE', `/api/files?path=${encodeURIComponent(fp)}`);
-    toast.success('Deleted');
-    loadDir();
+    try {
+      await api('DELETE', `/api/files?path=${encodeURIComponent(fp)}`);
+      toast.success('Deleted');
+      loadDir();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const handleRename = async (fp: string, oldName: string) => {
     const newName = prompt('Rename to:', oldName);
     if (!newName || newName === oldName) return;
     const dir = fp.substring(0, fp.length - oldName.length);
-    await api('POST', '/api/files/rename', { oldPath: fp, newPath: dir + newName });
-    toast.success('Renamed');
-    loadDir();
+    try {
+      await api('POST', '/api/files/rename', { oldPath: fp, newPath: dir + newName });
+      toast.success('Renamed');
+      loadDir();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const handleExtract = async (fp: string) => {
     if (!confirm(`Extract "${fp}"?`)) return;
-    const res = await api<{ ok: boolean; error?: string }>('POST', '/api/files/extract', { path: fp });
-    if (res.ok) { toast.success('Extracted'); loadDir(); }
-    else toast.error(res.error || 'Extract failed');
+    try {
+      await api('POST', '/api/files/extract', { path: fp });
+      toast.success('Extracted');
+      loadDir();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const handleEdit = async (fp: string) => {
@@ -222,11 +249,9 @@ const Files = () => {
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {!entry.isDir && (
-                          <a href={`/api/files/download?path=${encodeURIComponent(fp)}`} className="p-1 rounded hover:bg-secondary transition-colors" title="Download">
-                            <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                          </a>
-                        )}
+                        <a href={`/api/files/download?path=${encodeURIComponent(fp)}`} className="p-1 rounded hover:bg-secondary transition-colors" title={entry.isDir ? 'Download as ZIP' : 'Download'}>
+                          <Download className={`h-3.5 w-3.5 ${entry.isDir ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </a>
                         {editable && (
                           <button onClick={() => handleEdit(fp)} className="p-1 rounded hover:bg-secondary transition-colors" title="Edit">
                             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
