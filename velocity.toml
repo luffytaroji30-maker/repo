@@ -10,7 +10,7 @@ motd = "&b&lBedWars Network &7| &aJoin Now!"
 show-max-players = 500
 
 # Should we authenticate players with Mojang?
-online-mode = true
+online-mode = false
 
 # Should the proxy enforce the new public key security standard?
 force-key-authentication = true
