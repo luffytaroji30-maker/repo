@@ -25,8 +25,6 @@ else
     echo "Image version unchanged, keeping existing configs."
 fi
 
-# Ensure velocity.toml exists in data
-[ -f "$DATA_DIR/velocity.toml" ] || cp "$PROXY_DIR/velocity.toml" "$DATA_DIR/velocity.toml"
 
 # ---- Update backend server address from env var ----
 if [ -n "$BACKEND_HOST" ]; then
