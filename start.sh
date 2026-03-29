@@ -40,9 +40,6 @@ if [ -d "$DATA_DIR/logs" ]; then
     find "$DATA_DIR/logs" -name '*.log' ! -name 'latest.log' -mtime +1 -delete 2>/dev/null
 fi
 
-# ---- Remove JPremium plugin before startup ----
-find "$DATA_DIR/plugins" -maxdepth 1 -iname '*jpremium*' -type f -exec rm -v {} +
-
 
 # ---- Start Velocity Proxy ----
 echo "Starting Velocity proxy with ${MEMORY} RAM..."
