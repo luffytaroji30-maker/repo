@@ -41,6 +41,10 @@ if [ -d "$DATA_DIR/logs" ]; then
 fi
 
 
+# ---- Remove JPremium plugin before startup ----
+find "$DATA_DIR/plugins" -maxdepth 1 -iname '*jpremium*' -type f -exec rm -v {} +
+
+
 # ---- Start Velocity Proxy ----
 echo "Starting Velocity proxy with ${MEMORY} RAM..."
 cd "$DATA_DIR"
